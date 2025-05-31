@@ -9,32 +9,8 @@ export class AuthService {
     
     constructor(
         private readonly prisma: PrismaService,
-        private readonly jwtService: JwtService, // Add this injection
+        private readonly jwtService: JwtService,
     ) {}
-   
-
-
-
-    private async generateTokens(userId: string, email: string) {
-    const payload = { sub: userId, email };
-    
-    const [access_token, refresh_token] = await Promise.all([
-        // Access token - short lived (1h)
-        this.jwtService.signAsync(payload, { expiresIn: '1h' }),
-        // Refresh token - long lived (7 days)
-        this.jwtService.signAsync(payload, { expiresIn: '7d' }),
-    ]);
-
-    return {
-        access_token,
-        refresh_token,
-    };
-    }
-
-
-
-
-
 
 
     async signup(signupDto: SignupDto) {
@@ -115,11 +91,10 @@ export class AuthService {
         const payload = { 
             sub: userId, 
             email: email,
-            // You can add more claims here if needed (roles, permissions, etc.)
         };
         
         return await this.jwtService.signAsync(payload);
     }
-    
+    p
 
 }
