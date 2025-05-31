@@ -4,6 +4,8 @@ import { LoginDto, SignupDto } from './dto';
 import * as bcrypt from 'bcrypt';
 import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { AuthResponseDto, SignupResponseDto } from './dto';
+
 @Injectable()
 export class AuthService {
     
@@ -12,11 +14,15 @@ export class AuthService {
         private readonly jwtService: JwtService,
     ) {}
 
-
-    async signup(signupDto: SignupDto) {
-        // Check if user already exists
+    async signup(signupDto: SignupDto): Promise<SignupResponseDto> {
+        const { name, email, password } = signupDto;
+        
+        // Normalize email to lowercase for consistent storage
+        const normalizedEmail = email.toLowerCase().trim();
+        
+        // Check if user already exists with normalized email
         const existingUser = await this.prisma.user.findUnique({
-            where: { email: signupDto.email },
+            where: { email: normalizedEmail },
         });
 
         if (existingUser) {
@@ -25,13 +31,13 @@ export class AuthService {
 
         // Hash password with bcrypt
         const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(signupDto.password, saltRounds);
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // Create user in database
+        // Create user with normalized email and trimmed name
         const user = await this.prisma.user.create({
             data: {
-                name: signupDto.name,
-                email: signupDto.email,
+                name: name.trim(),
+                email: normalizedEmail,
                 password: hashedPassword,
             },
         });
@@ -48,32 +54,23 @@ export class AuthService {
         };
     }
     
-    
-    
-
-
-
-
-    
-    async login(loginDto: LoginDto) {
-        // Find user by email
+    async login(loginDto: LoginDto): Promise<AuthResponseDto> {
+        const { email, password } = loginDto;
+        
+        // Convert email to lowercase for case-insensitive lookup
+        const normalizedEmail = email.toLowerCase().trim();
+        
+        // Find user by normalized email
         const user = await this.prisma.user.findUnique({
-            where: { email: loginDto.email },
+            where: { email: normalizedEmail },
         });
 
-        if (!user) {
-            throw new UnauthorizedException('Invalid credentials');
-        }
-
-        // Verify password with bcrypt
-        const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
-        if (!isPasswordValid) {
+        if (!user || !(await bcrypt.compare(password, user.password))) {
             throw new UnauthorizedException('Invalid credentials');
         }
 
         // Generate JWT token
         const access_token = await this.generateAccessToken(user.id, user.email);
-
 
         return {
             access_token,
@@ -85,8 +82,6 @@ export class AuthService {
         };
     }
 
-
-
     private async generateAccessToken(userId: string, email: string): Promise<string> {
         const payload = { 
             sub: userId, 
@@ -95,6 +90,4 @@ export class AuthService {
         
         return await this.jwtService.signAsync(payload);
     }
-    
-
 }
