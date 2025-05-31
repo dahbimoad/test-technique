@@ -8,7 +8,7 @@ export class AuthService {
     login(loginDto: LoginDto) {
         return {
             data : loginDto,
-            message : 'Login successful',
+            message : 'Login successful ',
         };
     }
     signup(signupDto: SignupDto) {
