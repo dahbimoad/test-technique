@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { TaskStatus } from './create-task.dto';
+import { TaskStatus } from '@prisma/client';
 
 export class TaskResponseDto {
   @ApiProperty() id: string;
@@ -7,7 +7,7 @@ export class TaskResponseDto {
   @ApiProperty() description: string;
   @ApiProperty({ enum: TaskStatus }) status: TaskStatus;
   @ApiProperty() projectId: string;
-  @ApiProperty({ required: false }) assignedToId?: string;
+  @ApiProperty({ required: false, nullable: true }) assignedToId: string | null;
   @ApiProperty() createdAt: Date;
   @ApiProperty() updatedAt: Date;
 }

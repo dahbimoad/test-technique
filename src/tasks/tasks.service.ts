@@ -4,7 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateTaskDto, TaskStatus } from './dto/create-task.dto';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { TaskStatus } from '@prisma/client';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TaskResponseDto } from './dto/task-response.dto';
 

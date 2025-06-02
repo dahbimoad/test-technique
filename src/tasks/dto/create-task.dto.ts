@@ -7,12 +7,7 @@ import {
   MinLength,
   MaxLength,
 } from 'class-validator';
-
-export enum TaskStatus {
-  TODO = 'TODO',
-  DOING = 'DOING',
-  DONE = 'DONE',
-}
+import { TaskStatus } from '@prisma/client';
 
 export class CreateTaskDto {
   @IsString()
