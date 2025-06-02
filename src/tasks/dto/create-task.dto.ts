@@ -10,12 +10,20 @@ import {
 import { TaskStatus } from '@prisma/client';
 
 export class CreateTaskDto {
+  @ApiProperty({
+    example: 'Ma tâche 2',
+    description: 'Titre de la tâche',
+  })
   @IsString()
   @IsNotEmpty({ message: 'Task title is required' })
   @MinLength(3, { message: 'Task title must be at least 3 characters long' })
   @MaxLength(100, { message: 'Task title must not exceed 100 characters' })
   title: string;
 
+  @ApiProperty({
+    example: 'Description de la tâche 2',
+    description: 'Description détaillée de la tâche',
+  })
   @IsString()
   @IsNotEmpty({ message: 'Task description is required' })
   @MinLength(5, {
