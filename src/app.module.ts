@@ -12,9 +12,9 @@ import { TasksModule } from './tasks/tasks.module';
       isGlobal: true,
     }),
     PrismaModule,
-    AuthModule, 
-    UsersModule, 
-    ProjectsModule, 
+    AuthModule,
+    UsersModule,
+    ProjectsModule,
     TasksModule,
   ],
 })
