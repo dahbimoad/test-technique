@@ -16,6 +16,7 @@ A robust, secure, and scalable REST API built with NestJS for managing collabora
 ## 🎯 **Project Overview**
 
 This application implements a complete project management system where users can:
+
 - **Create and manage projects** with full CRUD operations
 - **Collaborate with team members** through role-based permissions
 - **Manage tasks** within projects (database schema ready, API structure prepared)
@@ -25,12 +26,14 @@ This application implements a complete project management system where users can
 ## 🏗️ **System Architecture**
 
 ### **Design Patterns Implemented**
+
 - **Repository Pattern** - Prisma ORM with clean data access layer
 - **Module Pattern** - Clean separation of concerns with NestJS modules
 - **DTO Pattern** - Request/response validation with class-validator
 - **Service Layer Pattern** - Business logic separation from controllers
 
 ### **Key Features**
+
 - 🔐 **JWT Authentication** with secure token management
 - 🛡️ **Role-Based Authorization** (Owner, Contributor, Viewer)
 - 📊 **Database Relations** with Prisma ORM
@@ -41,7 +44,8 @@ This application implements a complete project management system where users can
 ## 🚀 **Quick Start**
 
 ### **Prerequisites**
-- Node.js 18+ 
+
+- Node.js 18+
 - PostgreSQL 12+
 - npm or yarn
 
@@ -71,11 +75,13 @@ npm run start:dev
 ```
 
 ### **🔑 Test Credentials**
+
 All users have password: `password123`
 
 **Project Owners:**
+
 - `alice@example.com` - E-commerce Platform
-- `bob@example.com` - Mobile Banking App  
+- `bob@example.com` - Mobile Banking App
 - `charlie@example.com` - Healthcare Management System
 - `diana@example.com` - Social Media Analytics
 - `ethan@example.com` - AI-Powered Chatbot
@@ -83,17 +89,20 @@ All users have password: `password123`
 ## 📋 **API Endpoints Overview**
 
 ### **Authentication Endpoints**
+
 ```http
 POST /auth/signup     # Create new user account
 POST /auth/login      # Authenticate and get JWT token
 ```
 
-### **User Endpoints** 
+### **User Endpoints**
+
 ```http
 GET /users/me         # Get current user profile (requires JWT)
 ```
 
 ### **Project Endpoints**
+
 ```http
 GET /projects                # List user's projects (requires JWT)
 POST /projects               # Create new project (requires JWT)
@@ -102,49 +111,50 @@ DELETE /projects/:id         # Delete project (Owner only)
 ```
 
 ### **Task Endpoints**
+
 ```http
-POST /projects/:projectId/tasks    # Create task (Contributors+) 
-GET /projects/:projectId/tasks     # List project tasks (Members only) 
-PATCH /tasks/:id                   # Update task (Contributors+) 
-DELETE /tasks/:id                  # Delete task (Contributors+) 
+POST /projects/:projectId/tasks    # Create task (Contributors+)
+GET /projects/:projectId/tasks     # List project tasks (Members only)
+PATCH /tasks/:id                   # Update task (Contributors+)
+DELETE /tasks/:id                  # Delete task (Contributors+)
 ```
 
 ## 🔐 **Authentication & Authorization**
 
 ### **JWT Authentication Flow**
+
 1. **Registration/Login** → Receive JWT token
 2. **Include token** in `Authorization: Bearer <token>` header
 3. **Access protected endpoints** with valid token
 
 ### **🔑 Role-Based Permission Matrix**
 
-| **Operation** | **Endpoint** | **👑 Owner** | **👨‍💻 Contributor** | **👁️ Viewer** | **🚫 Non-Member** |
-|---------------|--------------|:------------:|:-------------------:|:-------------:|:----------------:|
-| **🔓 Authentication** |
-| Sign Up | `POST /auth/signup` | ✅ | ✅ | ✅ | ✅ |
-| Login | `POST /auth/login` | ✅ | ✅ | ✅ | ✅ |
-| Get Profile | `GET /users/me` | ✅ | ✅ | ✅ | ❌ |
-| **📂 Project Management** |
-| Create Project | `POST /projects` | ✅ | ✅ | ✅ | ❌ |
-| List My Projects | `GET /projects` | ✅ | ✅ | ✅ | ❌ |
-| View Project Details | `GET /projects/:id` | ✅ | ✅ | ✅ | ❌ |
-| Update Project | `PATCH /projects/:id` | ✅ | ❌ | ❌ | ❌ |
-| Delete Project | `DELETE /projects/:id` | ✅ | ❌ | ❌ | ❌ |
-| **👥 Team Management** |
-| Invite Users | `POST /projects/:id/invite` | ✅ | ✅ | ❌ | ❌ |
-| View Members | `GET /projects/:id/members` | ✅ | ✅ | ✅ | ❌ |
+| **Operation**                                | **Endpoint**                | **👑 Owner** | **👨‍💻 Contributor** | **👁️ Viewer** | **🚫 Non-Member** |
+| -------------------------------------------- | --------------------------- | :----------: | :----------------: | :-----------: | :---------------: |
+| **🔓 Authentication**                        |
+| Sign Up                                      | `POST /auth/signup`         |      ✅      |         ✅         |      ✅       |        ✅         |
+| Login                                        | `POST /auth/login`          |      ✅      |         ✅         |      ✅       |        ✅         |
+| Get Profile                                  | `GET /users/me`             |      ✅      |         ✅         |      ✅       |        ❌         |
+| **📂 Project Management**                    |
+| Create Project                               | `POST /projects`            |      ✅      |         ✅         |      ✅       |        ❌         |
+| List My Projects                             | `GET /projects`             |      ✅      |         ✅         |      ✅       |        ❌         |
+| View Project Details                         | `GET /projects/:id`         |      ✅      |         ✅         |      ✅       |        ❌         |
+| Update Project                               | `PATCH /projects/:id`       |      ✅      |         ❌         |      ❌       |        ❌         |
+| Delete Project                               | `DELETE /projects/:id`      |      ✅      |         ❌         |      ❌       |        ❌         |
+| **👥 Team Management**                       |
+| Invite Users                                 | `POST /projects/:id/invite` |      ✅      |         ✅         |      ❌       |        ❌         |
+| View Members                                 | `GET /projects/:id/members` |      ✅      |         ✅         |      ✅       |        ❌         |
 | **📋 Task Management** **(Structure Ready)** |
-| Create Task | `POST /projects/:id/tasks` | ✅ | ✅ | ❌ | ❌ |
-| View Tasks | `GET /projects/:id/tasks` | ✅ | ✅ | ✅ | ❌ |
-| Update Task | `PATCH /tasks/:id` | ✅ | ✅ | ❌ | ❌ |
-| Delete Task | `DELETE /tasks/:id` | ✅ | ✅ | ❌ | ❌ |
-
-
+| Create Task                                  | `POST /projects/:id/tasks`  |      ✅      |         ✅         |      ❌       |        ❌         |
+| View Tasks                                   | `GET /projects/:id/tasks`   |      ✅      |         ✅         |      ✅       |        ❌         |
+| Update Task                                  | `PATCH /tasks/:id`          |      ✅      |         ✅         |      ❌       |        ❌         |
+| Delete Task                                  | `DELETE /tasks/:id`         |      ✅      |         ✅         |      ❌       |        ❌         |
 
 ### **🔒 Security Features**
+
 - 🔒 **Password Hashing**: bcrypt with salt rounds (10)
 - 🎟️ **JWT Tokens**: Secure authentication with 24h expiration
-- 🛡️ **Authorization Guards**: Role-based access control 
+- 🛡️ **Authorization Guards**: Role-based access control
 - ✅ **Input Validation**: Comprehensive DTO validation with class-validator
 - 🚫 **CORS Protection**: Configurable cross-origin policies
 - 🔍 **Parameter Validation**: Project ownership and membership verification
@@ -188,7 +198,7 @@ model Membership {
   // Relations
   user    User    @relation(fields: [userId], references: [id])
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  
+
   @@unique([userId, projectId])
 }
 
@@ -226,6 +236,7 @@ enum TaskStatus {
 - **🏗️ [System Architecture](./docs/ARCHITECTURE.md)** - Design patterns and structure
 
 ### **Interactive API Documentation**
+
 ```bash
 # Start server and visit
 http://localhost:3000/api/docs
@@ -239,7 +250,7 @@ npm run start:dev        # Start with hot reload
 npm run start:debug      # Start with debug mode
 
 # Database
-npm run db:seed          # Seed database with test data  
+npm run db:seed          # Seed database with test data
 npm run db:reset         # Reset and reseed database
 npx prisma studio        # Database GUI
 
@@ -287,14 +298,17 @@ src/
 │   ├── projects.controller.ts # Project HTTP endpoints
 │   ├── projects.service.ts   # Project business logic
 │   └── projects.module.ts    # Project module configuration
-├── tasks/                   # Task module (structure ready)
-│   ├── dto/                 # Task DTOs (defined but not implemented)
+├── tasks/                   # Task module
+│   ├── dto/                 # Task DTOs
 │   │   ├── create-task.dto.ts
 │   │   ├── task-response.dto.ts
 │   │   ├── update-task.dto.ts
 │   │   └── index.ts
-│   ├── tasks.service.ts     # Task service (empty file)
-│   └── tasks.module.ts      # Task module (basic structure)
+│   ├── tasks.controller.ts  # Task HTTP endpoints
+│   ├── tasks.service.ts     # Task business logic
+│   ├── tasks.module.ts      # Task module configuration
+│   ├── tasks.controller.spec.ts # Task controller unit tests
+│   └── tasks.service.spec.ts    # Task service unit tests
 ├── users/                   # User management module
 │   ├── users.controller.ts  # User HTTP endpoints
 │   └── users.module.ts      # User module configuration
@@ -311,7 +325,6 @@ docs/
 ├── API.md                   # Complete API documentation
 └── ARCHITECTURE.md          # System architecture documentation
 ```
-
 
 ## 🚀 **Technology Stack**
 
