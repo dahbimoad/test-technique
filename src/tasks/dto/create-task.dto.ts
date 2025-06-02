@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  MinLength,
+  MaxLength,
+} from 'class-validator';
 
 export enum TaskStatus {
   TODO = 'TODO',
@@ -8,14 +15,20 @@ export enum TaskStatus {
 }
 
 export class CreateTaskDto {
-  @ApiProperty({ example: 'Implement login', minLength: 3 })
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Task title is required' })
+  @MinLength(3, { message: 'Task title must be at least 3 characters long' })
+  @MaxLength(100, { message: 'Task title must not exceed 100 characters' })
   title: string;
 
-  @ApiProperty({ example: 'Implement JWT login for users' })
   @IsString()
-  @IsNotEmpty()
+  @IsNotEmpty({ message: 'Task description is required' })
+  @MinLength(5, {
+    message: 'Task description must be at least 5 characters long',
+  })
+  @MaxLength(500, {
+    message: 'Task description must not exceed 500 characters',
+  })
   description: string;
 
   @ApiProperty({ enum: TaskStatus, default: TaskStatus.TODO, required: false })
@@ -23,7 +36,11 @@ export class CreateTaskDto {
   @IsOptional()
   status?: TaskStatus;
 
-  @ApiProperty({ example: 'userId', required: false, description: 'Assign to user (must be a project member)' })
+  @ApiProperty({
+    example: 'userId',
+    required: false,
+    description: 'Assign to user (must be a project member)',
+  })
   @IsString()
   @IsOptional()
   assignedToId?: string;
