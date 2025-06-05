@@ -1,13 +1,14 @@
-import { PrismaClient, Role, TaskStatus, User, Project, Membership, Task } from '@prisma/client';
+import { PrismaClient, Role, TaskStatus, User, Project, Membership, Task, Tag, ProjectTag } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Starting database seeding...');
-
   // Clear existing data
   await prisma.task.deleteMany();
+  await prisma.projectTag.deleteMany();
+  await prisma.tag.deleteMany();
   await prisma.membership.deleteMany();
   await prisma.project.deleteMany();
   await prisma.user.deleteMany();
@@ -157,8 +158,195 @@ async function main() {
       memberships.push(viewerMembership);
     }
   }
-
   console.log(`✅ Created ${memberships.length} project memberships`);
+
+  // Create Tags
+  console.log('🏷️ Creating tags...');
+  const tags = await Promise.all([
+    // Technology Tags
+    prisma.tag.create({
+      data: {
+        name: 'frontend',
+        color: '#3B82F6',
+        description: 'Frontend development related tasks',
+        createdById: users[0].id, // Alice
+      },
+    }),
+    prisma.tag.create({
+      data: {
+        name: 'backend',
+        color: '#10B981',
+        description: 'Backend development and API work',
+        createdById: users[0].id, // Alice
+      },
+    }),
+    prisma.tag.create({
+      data: {
+        name: 'database',
+        color: '#8B5CF6',
+        description: 'Database design and optimization',
+        createdById: users[1].id, // Bob
+      },
+    }),
+    prisma.tag.create({
+      data: {
+        name: 'mobile',
+        color: '#F59E0B',
+        description: 'Mobile app development',
+        createdById: users[1].id, // Bob
+      },
+    }),
+    // Priority Tags
+    prisma.tag.create({
+      data: {
+        name: 'urgent',
+        color: '#EF4444',
+        description: 'High priority tasks that need immediate attention',
+        createdById: users[2].id, // Charlie
+      },
+    }),
+    prisma.tag.create({
+      data: {
+        name: 'low-priority',
+        color: '#6B7280',
+        description: 'Tasks that can be completed when time permits',
+        createdById: users[2].id, // Charlie
+      },
+    }),
+    // Feature Tags
+    prisma.tag.create({
+      data: {
+        name: 'security',
+        color: '#DC2626',
+        description: 'Security-related features and improvements',
+        createdById: users[3].id, // Diana
+      },
+    }),
+    prisma.tag.create({
+      data: {
+        name: 'ui-ux',
+        color: '#EC4899',
+        description: 'User interface and user experience',
+        createdById: users[3].id, // Diana
+      },
+    }),
+    prisma.tag.create({
+      data: {
+        name: 'api',
+        color: '#06B6D4',
+        description: 'API development and integration',
+        createdById: users[4].id, // Ethan
+      },
+    }),
+    prisma.tag.create({
+      data: {
+        name: 'testing',
+        color: '#84CC16',
+        description: 'Testing and quality assurance',
+        createdById: users[4].id, // Ethan
+      },
+    }),
+    // Business Tags
+    prisma.tag.create({
+      data: {
+        name: 'mvp',
+        color: '#F97316',
+        description: 'Minimum Viable Product features',
+        createdById: users[5].id, // Fiona
+      },
+    }),
+    prisma.tag.create({
+      data: {
+        name: 'enhancement',
+        color: '#A855F7',
+        description: 'Feature enhancements and improvements',
+        createdById: users[5].id, // Fiona
+      },
+    }),
+  ]);
+
+  console.log(`✅ Created ${tags.length} tags`);
+
+  // Create Project-Tag associations
+  console.log('🔗 Creating project-tag associations...');
+  const projectTags: ProjectTag[] = [];
+
+  // E-commerce Platform (Project 0) - Frontend focused
+  const eCommerceTagIds = tags.filter(tag => 
+    ['frontend', 'backend', 'ui-ux', 'api', 'urgent', 'mvp'].includes(tag.name)
+  ).map(tag => tag.id);
+  
+  for (const tagId of eCommerceTagIds) {
+    const projectTag = await prisma.projectTag.create({
+      data: {
+        projectId: projects[0].id,
+        tagId: tagId,
+      },
+    });
+    projectTags.push(projectTag);
+  }
+
+  // Mobile Banking App (Project 1) - Security focused
+  const bankingTagIds = tags.filter(tag => 
+    ['mobile', 'security', 'backend', 'testing', 'urgent'].includes(tag.name)
+  ).map(tag => tag.id);
+  
+  for (const tagId of bankingTagIds) {
+    const projectTag = await prisma.projectTag.create({
+      data: {
+        projectId: projects[1].id,
+        tagId: tagId,
+      },
+    });
+    projectTags.push(projectTag);
+  }
+
+  // Healthcare Management System (Project 2) - Database focused
+  const healthcareTagIds = tags.filter(tag => 
+    ['database', 'backend', 'security', 'api', 'enhancement'].includes(tag.name)
+  ).map(tag => tag.id);
+  
+  for (const tagId of healthcareTagIds) {
+    const projectTag = await prisma.projectTag.create({
+      data: {
+        projectId: projects[2].id,
+        tagId: tagId,
+      },
+    });
+    projectTags.push(projectTag);
+  }
+
+  // Social Media Analytics (Project 3) - Analytics focused
+  const analyticsTagIds = tags.filter(tag => 
+    ['frontend', 'database', 'api', 'ui-ux', 'low-priority'].includes(tag.name)
+  ).map(tag => tag.id);
+  
+  for (const tagId of analyticsTagIds) {
+    const projectTag = await prisma.projectTag.create({
+      data: {
+        projectId: projects[3].id,
+        tagId: tagId,
+      },
+    });
+    projectTags.push(projectTag);
+  }
+
+  // AI-Powered Chatbot (Project 4) - AI/ML focused
+  const aiTagIds = tags.filter(tag => 
+    ['backend', 'api', 'testing', 'mvp', 'enhancement'].includes(tag.name)
+  ).map(tag => tag.id);
+  
+  for (const tagId of aiTagIds) {
+    const projectTag = await prisma.projectTag.create({
+      data: {
+        projectId: projects[4].id,
+        tagId: tagId,
+      },
+    });
+    projectTags.push(projectTag);
+  }
+
+  console.log(`✅ Created ${projectTags.length} project-tag associations`);
 
   // Create Tasks
   console.log('📋 Creating tasks...');
@@ -239,12 +427,13 @@ async function main() {
   }
 
   console.log(`✅ Created ${tasks.length} tasks`);
-
   // Summary
   console.log('\n📊 Seeding Summary:');
   console.log(`👥 Users: ${users.length}`);
   console.log(`📂 Projects: ${projects.length}`);
   console.log(`🔗 Memberships: ${memberships.length}`);
+  console.log(`🏷️ Tags: ${tags.length}`);
+  console.log(`🔗 Project-Tag Associations: ${projectTags.length}`);
   console.log(`📋 Tasks: ${tasks.length}`);
   
   console.log('\n🔑 Test Credentials (password: password123):');
@@ -259,6 +448,16 @@ async function main() {
       VIEWER: projectMemberships.filter((m: Membership) => m.role === Role.VIEWER).length,
     };
     console.log(`📂 ${project.name}: Owner(${roleCount.OWNER}) | Contributors(${roleCount.CONTRIBUTOR}) | Viewers(${roleCount.VIEWER})`);
+  }
+
+  console.log('\n🏷️ Tags Distribution per Project:');
+  for (const project of projects) {
+    const projectTagAssociations = projectTags.filter((pt: ProjectTag) => pt.projectId === project.id);
+    const projectTagNames = projectTagAssociations.map(pt => {
+      const tag = tags.find(t => t.id === pt.tagId);
+      return tag ? tag.name : 'unknown';
+    });
+    console.log(`📂 ${project.name}: [${projectTagNames.join(', ')}]`);
   }
 
   console.log('\n🌱 Database seeding completed successfully!');

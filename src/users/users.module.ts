@@ -4,6 +4,6 @@ import { AuthModule } from '../auth/auth.module'; // Import AuthModule to use Jw
 
 @Module({
   imports: [AuthModule], // Import AuthModule which provides JwtAuthGuard
-  controllers: [UsersController]
+  controllers: [UsersController],
 })
 export class UsersModule {}

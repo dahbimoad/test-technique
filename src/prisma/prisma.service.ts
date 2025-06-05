@@ -2,9 +2,11 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  
-   constructor(private readonly configService: ConfigService) {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
+  constructor(private readonly configService: ConfigService) {
     super({
       // Use ConfigService for database configuration
       datasources: {
@@ -13,9 +15,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         },
       },
       // Conditional logging based on environment
-      log: configService.get<string>('NODE_ENV') === 'development' 
-        ? ['query', 'info', 'warn', 'error'] 
-        : ['warn', 'error'],
+      log:
+        configService.get<string>('NODE_ENV') === 'development'
+          ? ['query', 'info', 'warn', 'error']
+          : ['warn', 'error'],
     });
   }
 
@@ -35,14 +38,16 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
   // Method to clean the database in development/test
   async cleanDatabase() {
     const env = this.configService.get<string>('NODE_ENV');
-    
+
     if (env === 'production') {
       throw new Error('Cannot clean database in production environment');
     }
-    
+
     // Get all model names dynamically
-    const models = Reflect.ownKeys(this).filter(key => key[0] !== '_') as string[];
-    
+    const models = Reflect.ownKeys(this).filter(
+      (key) => key[0] !== '_',
+    ) as string[];
+
     // Delete all records from all tables
     return Promise.all(models.map((modelKey) => this[modelKey].deleteMany()));
   }

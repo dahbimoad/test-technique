@@ -1,6 +1,17 @@
-import { Injectable, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  ConflictException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProjectDto, UpdateProjectDto, InviteUserDto, ProjectResponseDto, InviteResponseDto } from './dto';
+import {
+  CreateProjectDto,
+  UpdateProjectDto,
+  InviteUserDto,
+  ProjectResponseDto,
+  InviteResponseDto,
+} from './dto';
 import { Role, User, Project } from '@prisma/client';
 
 /**
@@ -17,7 +28,10 @@ export class ProjectsService {
    * @param userId ID of the user creating the project
    * @returns Created project with user role information
    */
-  async create(createProjectDto: CreateProjectDto, userId: string): Promise<ProjectResponseDto> {
+  async create(
+    createProjectDto: CreateProjectDto,
+    userId: string,
+  ): Promise<ProjectResponseDto> {
     const project = await this.prisma.project.create({
       data: {
         name: createProjectDto.name,
@@ -26,12 +40,12 @@ export class ProjectsService {
       },
       include: {
         owner: {
-          select: { id: true, name: true, email: true }
+          select: { id: true, name: true, email: true },
         },
         _count: {
-          select: { memberships: true }
-        }
-        }
+          select: { memberships: true },
+        },
+      },
     });
 
     return {
@@ -41,50 +55,84 @@ export class ProjectsService {
       createdAt: project.createdAt,
       owner: project.owner,
       userRole: Role.OWNER,
-      memberCount: project._count.memberships + 1 // +1 for owner
+      memberCount: project._count.memberships + 1, // +1 for owner
     };
   }
-
   /**
    * Get all projects where user is owner or member
    * @param userId ID of the requesting user
+   * @param tagNames Optional array of tag names to filter by
    * @returns Array of projects with user role information
    */
-  async findAllForUser(userId: string): Promise<ProjectResponseDto[]> {
+  async findAllForUser(
+    userId: string,
+    tagNames?: string[],
+  ): Promise<ProjectResponseDto[]> {
+    const whereClause: any = {
+      OR: [
+        { ownerId: userId },
+        {
+          memberships: {
+            some: { userId },
+          },
+        },
+      ],
+    };
+
+    // Add tag filtering if provided
+    if (tagNames && tagNames.length > 0) {
+      whereClause.AND = {
+        projectTags: {
+          some: {
+            tag: {
+              name: {
+                in: tagNames.map((name) => name.toLowerCase()),
+              },
+            },
+          },
+        },
+      };
+    }
+
     const projects = await this.prisma.project.findMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { 
-            memberships: {
-              some: { userId }
-            }
-          }
-        ]
-      },
+      where: whereClause,
       include: {
         owner: {
-          select: { id: true, name: true, email: true }
+          select: { id: true, name: true, email: true },
         },
         memberships: {
           where: { userId },
-          select: { role: true }
+          select: { role: true },
+        },
+        projectTags: {
+          include: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+                description: true,
+              },
+            },
+          },
         },
         _count: {
-          select: { memberships: true }
-        }
+          select: { memberships: true },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
 
-    return projects.map(project => ({
+    return projects.map((project) => ({
       id: project.id,
       name: project.name,
       description: project.description,
       createdAt: project.createdAt,
       owner: project.owner,
-      userRole: project.ownerId === userId ? Role.OWNER : project.memberships[0]?.role,
-      memberCount: project._count.memberships + 1 // +1 for owner
+      userRole:
+        project.ownerId === userId ? Role.OWNER : project.memberships[0]?.role,
+      memberCount: project._count.memberships + 1, // +1 for owner
+      tags: project.projectTags.map((pt) => pt.tag), // Include tags in response
     }));
   }
 
@@ -94,21 +142,24 @@ export class ProjectsService {
    * @param userId ID of the requesting user
    * @returns Project details with user role information
    */
-  async findOne(projectId: string, userId: string): Promise<ProjectResponseDto> {
+  async findOne(
+    projectId: string,
+    userId: string,
+  ): Promise<ProjectResponseDto> {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       include: {
         owner: {
-          select: { id: true, name: true, email: true }
+          select: { id: true, name: true, email: true },
         },
         memberships: {
           where: { userId },
-          select: { role: true }
+          select: { role: true },
         },
         _count: {
-          select: { memberships: true }
-        }
-      }
+          select: { memberships: true },
+        },
+      },
     });
 
     if (!project) {
@@ -118,7 +169,7 @@ export class ProjectsService {
     // Check if user has access to this project
     const isOwner = project.ownerId === userId;
     const membership = project.memberships[0];
-    
+
     if (!isOwner && !membership) {
       throw new ForbiddenException('You are not a member of this project');
     }
@@ -130,7 +181,7 @@ export class ProjectsService {
       createdAt: project.createdAt,
       owner: project.owner,
       userRole: isOwner ? Role.OWNER : membership.role,
-      memberCount: project._count.memberships + 1 // +1 for owner
+      memberCount: project._count.memberships + 1, // +1 for owner
     };
   }
 
@@ -141,10 +192,14 @@ export class ProjectsService {
    * @param userId ID of the requesting user
    * @returns Updated project information
    */
-  async update(projectId: string, updateProjectDto: UpdateProjectDto, userId: string): Promise<ProjectResponseDto> {
+  async update(
+    projectId: string,
+    updateProjectDto: UpdateProjectDto,
+    userId: string,
+  ): Promise<ProjectResponseDto> {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
-      select: { ownerId: true }
+      select: { ownerId: true },
     });
 
     if (!project) {
@@ -160,12 +215,12 @@ export class ProjectsService {
       data: updateProjectDto,
       include: {
         owner: {
-          select: { id: true, name: true, email: true }
+          select: { id: true, name: true, email: true },
         },
         _count: {
-          select: { memberships: true }
-        }
-      }
+          select: { memberships: true },
+        },
+      },
     });
 
     return {
@@ -175,7 +230,7 @@ export class ProjectsService {
       createdAt: updatedProject.createdAt,
       owner: updatedProject.owner,
       userRole: Role.OWNER,
-      memberCount: updatedProject._count.memberships + 1 // +1 for owner
+      memberCount: updatedProject._count.memberships + 1, // +1 for owner
     };
   }
 
@@ -184,10 +239,13 @@ export class ProjectsService {
    * @param projectId Project ID
    * @param userId ID of the requesting user
    */
-  async remove(projectId: string, userId: string): Promise<{ message: string }> {
+  async remove(
+    projectId: string,
+    userId: string,
+  ): Promise<{ message: string }> {
     const project = await this.prisma.project.findUnique({
       where: { id: projectId },
-      select: { ownerId: true, name: true }
+      select: { ownerId: true, name: true },
     });
 
     if (!project) {
@@ -199,7 +257,7 @@ export class ProjectsService {
     }
 
     await this.prisma.project.delete({
-      where: { id: projectId }
+      where: { id: projectId },
     });
 
     return { message: `Project "${project.name}" deleted successfully` };
@@ -212,7 +270,11 @@ export class ProjectsService {
    * @param inviterId ID of the user sending the invitation
    * @returns Invitation confirmation
    */
-  async inviteUser(projectId: string, inviteUserDto: InviteUserDto, inviterId: string): Promise<InviteResponseDto> {
+  async inviteUser(
+    projectId: string,
+    inviteUserDto: InviteUserDto,
+    inviterId: string,
+  ): Promise<InviteResponseDto> {
     const { email, role } = inviteUserDto;
 
     // Check if project exists and user has permission to invite
@@ -221,9 +283,9 @@ export class ProjectsService {
       include: {
         memberships: {
           where: { userId: inviterId },
-          select: { role: true }
-        }
-      }
+          select: { role: true },
+        },
+      },
     });
 
     if (!project) {
@@ -233,16 +295,20 @@ export class ProjectsService {
     // Only owner and contributors can invite users
     const isOwner = project.ownerId === inviterId;
     const inviterMembership = project.memberships[0];
-    const canInvite = isOwner || (inviterMembership && inviterMembership.role === Role.CONTRIBUTOR);
+    const canInvite =
+      isOwner ||
+      (inviterMembership && inviterMembership.role === Role.CONTRIBUTOR);
 
     if (!canInvite) {
-      throw new ForbiddenException('Only project owner and contributors can invite users');
+      throw new ForbiddenException(
+        'Only project owner and contributors can invite users',
+      );
     }
 
     // Find user by email
     const userToInvite = await this.prisma.user.findUnique({
       where: { email },
-      select: { id: true, email: true }
+      select: { id: true, email: true },
     });
 
     if (!userToInvite) {
@@ -258,9 +324,9 @@ export class ProjectsService {
       where: {
         userId_projectId: {
           userId: userToInvite.id,
-          projectId
-        }
-      }
+          projectId,
+        },
+      },
     });
 
     if (existingMembership) {
@@ -272,16 +338,16 @@ export class ProjectsService {
       data: {
         userId: userToInvite.id,
         projectId,
-        role
-      }
+        role,
+      },
     });
 
     return {
       message: 'User invited successfully',
       invitation: {
         email: userToInvite.email,
-        role
-      }
+        role,
+      },
     };
   }
 
@@ -290,7 +356,7 @@ export class ProjectsService {
    * @param projectId Project ID
    * @param userId ID of the requesting user (for access validation)
    * @returns Array of project members with their roles
-   */  
+   */
   async getProjectMembers(projectId: string, userId: string) {
     // First check if user has access to this project
     await this.findOne(projectId, userId);
@@ -299,16 +365,16 @@ export class ProjectsService {
       where: { id: projectId },
       include: {
         owner: {
-          select: { id: true, name: true, email: true }
+          select: { id: true, name: true, email: true },
         },
         memberships: {
           include: {
             user: {
-              select: { id: true, name: true, email: true }
-            }
-          }
-        }
-      }
+              select: { id: true, name: true, email: true },
+            },
+          },
+        },
+      },
     });
 
     if (!project) {
@@ -319,15 +385,177 @@ export class ProjectsService {
       {
         ...project.owner,
         role: Role.OWNER,
-        joinedAt: project.createdAt
+        joinedAt: project.createdAt,
       },
-      ...project.memberships.map(membership => ({
+      ...project.memberships.map((membership) => ({
         ...membership.user,
         role: membership.role,
-        joinedAt: membership.id // Using membership ID as a proxy for join date
-      }))
+        joinedAt: membership.id, // Using membership ID as a proxy for join date
+      })),
     ];
 
     return { members };
+  }
+
+  /**
+   * Add tags to a project
+   * @param projectId Project ID
+   * @param tagIds Array of tag IDs to add
+   * @param userId ID of the requesting user (for access validation)
+   * @returns Updated project with tags
+   */
+  async addTagsToProject(projectId: string, tagIds: string[]) {
+    // Verify all tags exist
+    const existingTags = await this.prisma.tag.findMany({
+      where: { id: { in: tagIds } },
+      select: { id: true },
+    });
+
+    const existingTagIds = existingTags.map((tag) => tag.id);
+    const missingTagIds = tagIds.filter((id) => !existingTagIds.includes(id));
+
+    if (missingTagIds.length > 0) {
+      throw new NotFoundException(
+        `Tags not found: ${missingTagIds.join(', ')}`,
+      );
+    }
+
+    // Get current project tags to avoid duplicates
+    const currentProjectTags = await this.prisma.projectTag.findMany({
+      where: { projectId },
+      select: { tagId: true },
+    });
+
+    const currentTagIds = currentProjectTags.map((pt) => pt.tagId);
+    const newTagIds = tagIds.filter((id) => !currentTagIds.includes(id));
+
+    if (newTagIds.length === 0) {
+      throw new ConflictException(
+        'All specified tags are already added to this project',
+      );
+    }
+
+    try {
+      // Create new project-tag associations
+      await this.prisma.projectTag.createMany({
+        data: newTagIds.map((tagId) => ({
+          projectId,
+          tagId,
+        })),
+      }); // Return updated project with tags
+      const updatedProject = await this.getProjectWithTags(projectId);
+      if (!updatedProject) {
+        throw new NotFoundException('Project not found after update');
+      }
+      return updatedProject;
+    } catch (error) {
+      throw new Error('Failed to add tags to project');
+    }
+  }
+
+  /**
+   * Remove a tag from a project
+   * @param projectId Project ID
+   * @param tagId Tag ID to remove
+   * @returns Updated project with tags
+   */
+  async removeTagFromProject(projectId: string, tagId: string) {
+    const projectTag = await this.prisma.projectTag.findUnique({
+      where: {
+        projectId_tagId: {
+          projectId,
+          tagId,
+        },
+      },
+    });
+
+    if (!projectTag) {
+      throw new NotFoundException('Tag is not associated with this project');
+    }
+
+    try {
+      await this.prisma.projectTag.delete({
+        where: {
+          projectId_tagId: {
+            projectId,
+            tagId,
+          },
+        },
+      });
+
+      return this.getProjectWithTags(projectId);
+    } catch (error) {
+      throw new Error('Failed to remove tag from project');
+    }
+  }
+
+  /**
+   * Get project tags
+   * @param projectId Project ID
+   * @returns Project tags
+   */
+  async getProjectTags(projectId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        projectTags: {
+          include: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+                description: true,
+                createdAt: true,
+                createdBy: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!project) {
+      throw new NotFoundException(`Project with ID "${projectId}" not found`);
+    }
+
+    return project.projectTags.map((pt) => pt.tag);
+  }
+
+  /**
+   * Get project with its associated tags (private helper method)
+   * @param projectId Project ID
+   * @returns Project with tags array
+   */
+  private async getProjectWithTags(projectId: string) {
+    return this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        owner: {
+          select: { id: true, name: true, email: true },
+        },
+        projectTags: {
+          include: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+                description: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: { memberships: true },
+        },
+      },
+    });
   }
 }
