@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export class AuthResponseDto {
   @ApiProperty({
     description: 'JWT access token for authentication',
-    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
   })
   access_token: string;
 
@@ -12,8 +12,8 @@ export class AuthResponseDto {
     example: {
       id: 'clx1y2z3a4b5c6d7e8f9g0h1',
       name: 'John Doe',
-      email: 'john.doe@example.com'
-    }
+      email: 'john.doe@example.com',
+    },
   })
   user: {
     id: string;
@@ -25,7 +25,7 @@ export class AuthResponseDto {
 export class SignupResponseDto {
   @ApiProperty({
     description: 'Success message',
-    example: 'User registered successfully'
+    example: 'User registered successfully',
   })
   message: string;
 
@@ -35,8 +35,8 @@ export class SignupResponseDto {
       id: 'clx1y2z3a4b5c6d7e8f9g0h1',
       name: 'John Doe',
       email: 'john.doe@example.com',
-      createdAt: '2025-05-31T10:30:00.000Z'
-    }
+      createdAt: '2025-05-31T10:30:00.000Z',
+    },
   })
   user: {
     id: string;

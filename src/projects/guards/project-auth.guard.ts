@@ -1,4 +1,10 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Role } from '@prisma/client';
@@ -28,14 +34,14 @@ export class ProjectAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    
+
     if (!user) {
       throw new ForbiddenException('User not authenticated');
     }
 
     // Get project ID from route parameters
     const projectId = request.params.id || request.params.projectId;
-    
+
     if (!projectId) {
       throw new ForbiddenException('Project ID is required');
     }
@@ -47,9 +53,9 @@ export class ProjectAuthGuard implements CanActivate {
         owner: true,
         memberships: {
           where: { userId: user.id },
-          select: { role: true }
-        }
-      }
+          select: { role: true },
+        },
+      },
     });
 
     if (!project) {
@@ -59,17 +65,20 @@ export class ProjectAuthGuard implements CanActivate {
     // Check if user is project owner or member
     const isOwner = project.owner.id === user.id;
     const membership = project.memberships[0];
-    
+
     if (!isOwner && !membership) {
       throw new ForbiddenException('You are not a member of this project');
     }
 
     // Get user's role in the project
     const userRole = isOwner ? Role.OWNER : membership.role;
-    
+
     // Get required roles from decorator
-    const requiredRoles = this.reflector.get<Role[]>('project-roles', context.getHandler());
-    
+    const requiredRoles = this.reflector.get<Role[]>(
+      'project-roles',
+      context.getHandler(),
+    );
+
     // If no specific roles required, just check membership
     if (!requiredRoles || requiredRoles.length === 0) {
       request.projectRole = userRole;
@@ -79,13 +88,15 @@ export class ProjectAuthGuard implements CanActivate {
 
     // Check if user has required role
     if (!requiredRoles.includes(userRole)) {
-      throw new ForbiddenException(`Insufficient permissions. Required roles: ${requiredRoles.join(', ')}`);
+      throw new ForbiddenException(
+        `Insufficient permissions. Required roles: ${requiredRoles.join(', ')}`,
+      );
     }
 
     // Attach role and project to request for use in controllers
     request.projectRole = userRole;
     request.project = project;
-    
+
     return true;
   }
 }
