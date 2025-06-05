@@ -11,7 +11,7 @@ export class CreateProjectDto {
     description: 'Project name',
     example: 'E-commerce Platform',
     minLength: 3,
-    maxLength: 100
+    maxLength: 100,
   })
   @IsString()
   @IsNotEmpty({ message: 'Project name is required' })
@@ -24,12 +24,16 @@ export class CreateProjectDto {
     description: 'Project description',
     example: 'A modern e-commerce platform built with NestJS and React',
     minLength: 10,
-    maxLength: 500
+    maxLength: 500,
   })
   @IsString()
   @IsNotEmpty({ message: 'Project description is required' })
-  @MinLength(10, { message: 'Project description must be at least 10 characters long' })
-  @MaxLength(500, { message: 'Project description must not exceed 500 characters' })
+  @MinLength(10, {
+    message: 'Project description must be at least 10 characters long',
+  })
+  @MaxLength(500, {
+    message: 'Project description must not exceed 500 characters',
+  })
   @Transform(({ value }) => value?.trim())
   description: string;
 }
