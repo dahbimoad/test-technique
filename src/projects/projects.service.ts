@@ -11,6 +11,9 @@ import {
   InviteUserDto,
   ProjectResponseDto,
   InviteResponseDto,
+  PaginationQueryDto,
+  PaginatedProjectsResponseDto,
+  PaginationMetaDto,
 } from './dto';
 import { Role, User, Project } from '@prisma/client';
 
@@ -58,6 +61,164 @@ export class ProjectsService {
       memberCount: project._count.memberships + 1, // +1 for owner
     };
   }
+  /**
+   * Get all projects where user is owner or member with pagination
+   * @param userId ID of the requesting user
+   * @param paginationQuery Pagination and filtering parameters
+   * @returns Paginated projects with user role information
+   */
+  async findAllForUserPaginated(
+    userId: string,
+    paginationQuery: PaginationQueryDto,
+  ): Promise<PaginatedProjectsResponseDto> {
+    const {
+      page = 1,
+      limit = 10,
+      sort = 'createdAt',
+      order = 'desc',
+      search,
+      tags,
+    } = paginationQuery;
+
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+
+    // Build base where clause
+    const whereClause: any = {
+      OR: [
+        { ownerId: userId },
+        {
+          memberships: {
+            some: { userId },
+          },
+        },
+      ],
+    };
+
+    // Add search filtering if provided
+    if (search) {
+      whereClause.AND = whereClause.AND || [];
+      whereClause.AND.push({
+        OR: [
+          {
+            name: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            description: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      });
+    }
+
+    // Add tag filtering if provided
+    if (tags) {
+      const tagNames = tags.split(',').map((tag) => tag.trim().toLowerCase());
+      whereClause.AND = whereClause.AND || [];
+      whereClause.AND.push({
+        projectTags: {
+          some: {
+            tag: {
+              name: {
+                in: tagNames,
+              },
+            },
+          },
+        },
+      });
+    }
+
+    // Build order by clause
+    let orderBy: any;
+    switch (sort) {
+      case 'name':
+        orderBy = { name: order };
+        break;
+      case 'memberCount':
+        // For member count, we need to sort by the count of memberships
+        orderBy = { memberships: { _count: order } };
+        break;
+      case 'createdAt':
+      default:
+        orderBy = { createdAt: order };
+        break;
+    }
+
+    // Get total count for pagination metadata
+    const totalItems = await this.prisma.project.count({
+      where: whereClause,
+    });
+
+    // Get paginated projects
+    const projects = await this.prisma.project.findMany({
+      where: whereClause,
+      include: {
+        owner: {
+          select: { id: true, name: true, email: true },
+        },
+        memberships: {
+          where: { userId },
+          select: { role: true },
+        },
+        projectTags: {
+          include: {
+            tag: {
+              select: {
+                id: true,
+                name: true,
+                color: true,
+                description: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: { memberships: true },
+        },
+      },
+      orderBy,
+      skip,
+      take: limit,
+    });
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(totalItems / limit);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+
+    const meta: PaginationMetaDto = {
+      currentPage: page,
+      itemsPerPage: limit,
+      totalItems,
+      totalPages,
+      hasNextPage,
+      hasPreviousPage,
+    };
+
+    // Transform projects to response DTOs
+    const data = projects.map((project) => ({
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      createdAt: project.createdAt,
+      owner: project.owner,
+      userRole:
+        project.ownerId === userId ? Role.OWNER : project.memberships[0]?.role,
+      memberCount: project._count.memberships + 1, // +1 for owner
+      tags: project.projectTags.map((pt) => pt.tag),
+    }));
+
+    return {
+      data,
+      meta,
+    };
+  }
+
   /**
    * Get all projects where user is owner or member
    * @param userId ID of the requesting user

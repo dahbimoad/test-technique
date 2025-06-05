@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -25,6 +26,8 @@ import {
   InviteUserDto,
   ProjectResponseDto,
   InviteResponseDto,
+  PaginationQueryDto,
+  PaginatedProjectsResponseDto,
 } from './dto';
 import { AddTagsToProjectDto, AddTagsToProjectResponseDto } from '../tags/dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -159,6 +162,71 @@ export class ProjectsController {
   })
   async findAll(@GetUser() user: User): Promise<ProjectResponseDto[]> {
     return this.projectsService.findAllForUser(user.id);
+  }
+
+  /**
+   * Get all projects with pagination, search, and filtering
+   */
+  @Get('paginated')
+  @ApiOperation({
+    summary: 'Get paginated user projects',
+    description:
+      'Retrieves projects where the authenticated user is owner or member with pagination, search, and filtering capabilities',
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Projects retrieved successfully - returns paginated projects with metadata',
+    type: PaginatedProjectsResponseDto,
+    example: {
+      data: [
+        {
+          id: 'clx1y2z3a4b5c6d7e8f9g0h1',
+          name: 'E-commerce Platform',
+          description: 'Modern e-commerce solution',
+          createdAt: '2025-05-31T10:30:00.000Z',
+          owner: {
+            id: 'clx1y2z3a4b5c6d7e8f9g0h2',
+            name: 'John Doe',
+            email: 'john.doe@example.com',
+          },
+          userRole: 'OWNER',
+          memberCount: 3,
+        },
+      ],
+      meta: {
+        currentPage: 1,
+        itemsPerPage: 10,
+        totalItems: 25,
+        totalPages: 3,
+        hasNextPage: true,
+        hasPreviousPage: false,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid pagination parameters',
+    example: {
+      statusCode: 400,
+      message: ['page must be a positive number', 'limit must be between 1 and 100'],
+      error: 'Bad Request',
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid or missing JWT token',
+    example: {
+      statusCode: 401,
+      message: 'Unauthorized',
+      error: 'Unauthorized',
+    },
+  })
+  async findAllPaginated(
+    @GetUser() user: User,
+    @Query() paginationQuery: PaginationQueryDto,
+  ): Promise<PaginatedProjectsResponseDto> {
+    return this.projectsService.findAllForUserPaginated(user.id, paginationQuery);
   }
 
   /**
